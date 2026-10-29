@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BB84 解說手冊</title>
+<style>
+:root {
+    color-scheme: light;
+    --page: #f4efe9;
+    --card: #fcfcfb;
+    --card-2: #f1ebe4;
+    --ink: #2a2522;
+    --ink-2: #574d48;
+    --muted: #857a74;
+    --line: #e2d9d0;
+    --accent: #8d7d7b;
+    --navy: #194966;
+    --gold: #b8862b;
+    --blue: #2a78d6;
+    --orange: #eb6834;
+    --aqua: #1baf7a;
+    --good: #0b7d0b;
+    --bad: #c0392b;
+    --say: #eef4f9;
+    --say-line: #2a78d6;
+    --warn-bg: #fbf3e4;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --page: #121110;
+        --card: #1a1a19;
+        --card-2: #242321;
+        --ink: #f0efec;
+        --ink-2: #c9c4bc;
+        --muted: #8f8a83;
+        --line: #2f2d2a;
+        --navy: #6fa8d6;
+        --gold: #e0b25a;
+        --blue: #3987e5;
+        --orange: #d95926;
+        --aqua: #199e70;
+        --good: #3cc13c;
+        --bad: #e66767;
+        --say: #1c2630;
+        --say-line: #3987e5;
+        --warn-bg: #2a2418;
+    }
+}
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #121110;
+    --card: #1a1a19;
+    --card-2: #242321;
+    --ink: #f0efec;
+    --ink-2: #c9c4bc;
+    --muted: #8f8a83;
+    --line: #2f2d2a;
+    --navy: #6fa8d6;
+    --gold: #e0b25a;
+    --blue: #3987e5;
+    --orange: #d95926;
+    --aqua: #199e70;
+    --good: #3cc13c;
+    --bad: #e66767;
+    --say: #1c2630;
+    --say-line: #3987e5;
+    --warn-bg: #2a2418;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+}
+a { color: var(--blue); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 0.9em; background: var(--card-2); padding: 1px 5px; border-radius: 4px; }
+pre { font-family: ui-monospace, Consolas, monospace; font-size: 0.88em; background: var(--card-2); padding: 12px 14px; border-radius: 8px; overflow-x: auto; line-height: 1.55; margin: 8px 0 12px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px 80px; }
+header.hero { padding: 48px 0 28px; }
+.hero .kicker { color: var(--muted); font-size: 0.9em; letter-spacing: 0.06em; }
+.hero h1 { font-size: clamp(1.8em, 5vw, 2.6em); line-height: 1.25; margin: 6px 0 10px; }
+.hero p { color: var(--ink-2); max-width: 760px; }
+.hero .back { display: inline-block; margin-top: 14px; font-size: 0.92em; }
+
+nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+nav.toc ol { columns: 2; column-gap: 32px; padding-left: 20px; }
+nav.toc li { break-inside: avoid; color: var(--ink-2); }
+@media (max-width: 640px) { nav.toc ol { columns: 1; } }
+
+section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 28px clamp(16px, 4vw, 36px); margin-bottom: 22px; }
+section > h2 { font-size: 1.45em; margin-bottom: 4px; }
+section > .lead { color: var(--ink-2); margin-bottom: 18px; }
+h3 { font-size: 1.12em; margin: 22px 0 8px; }
+p { margin-bottom: 10px; }
+ul, ol { padding-left: 22px; margin-bottom: 10px; }
+li { margin-bottom: 4px; }
+.num { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9em; margin-right: 8px; flex: none; }
+:root[data-theme="dark"] .num { color: #111; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .num { color: #111; } }
+
+.say { background: var(--say); border-left: 4px solid var(--say-line); border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 12px 0; }
+.say::before { content: "💬 跟聽眾這樣說"; display: block; font-size: 0.8em; font-weight: 700; color: var(--say-line); margin-bottom: 4px; letter-spacing: 0.04em; }
+.warn { background: var(--warn-bg); border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+.warn::before { content: "⚠ 要誠實說明"; display: block; font-size: 0.8em; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.card { background: var(--card-2); border-radius: 12px; padding: 16px 18px; }
+.card h4 { font-size: 1.02em; margin-bottom: 6px; }
+.card p, .card li { font-size: 0.95em; }
+
+.step { display: grid; grid-template-columns: auto 1fr; gap: 0 14px; padding: 18px 0; border-top: 1px solid var(--line); }
+.step:first-of-type { border-top: none; }
+.step h3 { margin: 2px 0 8px; display: flex; align-items: center; }
+.step .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; grid-column: 1 / -1; }
+.step .cols > div { background: var(--card-2); border-radius: 10px; padding: 12px 14px; font-size: 0.95em; }
+.step .cols b.tag { display: block; font-size: 0.78em; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.93em; margin: 8px 0 14px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--card-2); font-weight: 700; color: var(--ink-2); }
+.table-wrap { overflow-x: auto; }
+
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 4px; }
+.flow span { background: var(--navy); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 0.9em; font-weight: 600; }
+:root[data-theme="dark"] .flow span { color: #111; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .flow span { color: #111; } }
+.flow i { color: var(--gold); font-style: normal; font-weight: 700; }
+
+figure { margin: 14px 0; text-align: center; }
+figure svg { width: 100%; max-width: 640px; height: auto; }
+figcaption { font-size: 0.88em; color: var(--muted); margin-top: 6px; }
+
+details { background: var(--card-2); border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }
+details summary { cursor: pointer; font-weight: 700; }
+details[open] summary { margin-bottom: 8px; }
+
+.demo { counter-reset: d; list-style: none; padding-left: 0; }
+.demo li { counter-increment: d; position: relative; padding: 10px 0 10px 52px; border-top: 1px solid var(--line); }
+.demo li::before { content: counter(d); position: absolute; left: 0; top: 10px; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.demo .time { color: var(--muted); font-size: 0.85em; }
+
+.stat { font-size: 2em; font-weight: 700; color: var(--navy); line-height: 1.1; }
+footer { text-align: center; color: var(--muted); font-size: 0.88em; margin-top: 30px; }
+.theme-btn { position: fixed; right: 16px; bottom: 16px; background: var(--card); border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 8px 14px; cursor: pointer; font: inherit; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+    <div class="kicker">BB84 SIMULATOR · 解說手冊</div>
+    <h1>怎麼操作、背後的物理、<br>以及怎麼講給別人聽</h1>
+    <p>這份手冊對照模擬器的每一個按鈕和圖表，說明它在真實世界代表什麼物理現象，並附上可以直接對聽眾說的話。適合在研討會、課堂或 Demo 前快速複習。</p>
+    <a class="back" href="index.html">← 回到模擬器</a>
+</header>
+
+<nav class="toc" aria-label="目錄">
+    <ol>
+        <li><a href="#pitch">30 秒說完 BB84</a></li>
+        <li><a href="#concepts">三個核心觀念</a></li>
+        <li><a href="#steps">六個步驟：畫面、物理、說法</a></li>
+        <li><a href="#params">參數對照真實硬體</a></li>
+        <li><a href="#attacks">三種竊聽攻擊</a></li>
+        <li><a href="#lab">實驗室七張圖怎麼講</a></li>
+        <li><a href="#qiskit">接上真正的量子電腦</a></li>
+        <li><a href="#demo">3 分鐘現場 Demo 腳本</a></li>
+        <li><a href="#faq">常見問題</a></li>
+        <li><a href="#limits">模擬的限制（誠實說明）</a></li>
+        <li><a href="#glossary">中英名詞對照</a></li>
+    </ol>
+</nav>
+
+<!-- ================================================================ -->
+<section id="pitch">
+    <h2>30 秒說完 BB84</h2>
+    <p class="lead">遇到完全不懂量子的人，先用這段開場。</p>
+    <div class="say">現在的網路加密靠的是「數學很難算」，但量子電腦出現後，RSA 這類加密可能被破解。BB84 換一個思路：把金鑰寫在單顆光子的偏振上。量子力學規定，沒有人能在不留下痕跡的情況下偷看一顆光子，所以只要 Alice 和 Bob 檢查錯誤率，就知道有沒有人竊聽。錯誤太多就丟掉重來；錯誤夠少，就用數學把竊聽者可能知道的部分「擠掉」，剩下的就是只有他們兩人知道的金鑰。</div>
+    <div class="grid2">
+        <div class="card"><h4>一句話版本</h4><p>BB84 的安全性來自物理定律，不是來自數學難題。</p></div>
+        <div class="card"><h4>為什麼現在重要</h4><p>「先收集、以後解密」（harvest now, decrypt later）：今天被截下來的加密資料，未來可能被量子電腦解開。</p></div>
+    </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="concepts">
+    <h2>三個核心觀念</h2>
+    <p class="lead">聽懂這三件事，就能聽懂整個模擬器。</p>
+
+    <h3><span class="num">1</span>光子的偏振就是一個量子位元</h3>
+    <p>光是電磁波，電場振動的方向叫做「偏振」。一顆光子的偏振可以是水平（H）、垂直（V），或斜 45°（D）、斜 135°（A）。BB84 用兩組「基底」來編碼：</p>
+    <figure>
+        <svg viewBox="0 0 640 250" role="img" aria-label="BB84 的四個偏振態與兩組基底">
+            <g font-family="system-ui, sans-serif" font-size="14" fill="currentColor">
+                <text x="160" y="24" text-anchor="middle" font-weight="700">直角基底「+」</text>
+                <text x="480" y="24" text-anchor="middle" font-weight="700">對角基底「×」</text>
+                <circle cx="160" cy="130" r="80" fill="none" style="stroke:var(--line)" stroke-width="2"/>
+                <circle cx="480" cy="130" r="80" fill="none" style="stroke:var(--line)" stroke-width="2"/>
+                <line x1="90" y1="130" x2="230" y2="130" style="stroke:var(--blue)" stroke-width="5" stroke-linecap="round"/>
+                <line x1="160" y1="60" x2="160" y2="200" style="stroke:var(--orange)" stroke-width="5" stroke-linecap="round"/>
+                <line x1="430" y1="180" x2="530" y2="80" style="stroke:var(--blue)" stroke-width="5" stroke-linecap="round"/>
+                <line x1="430" y1="80" x2="530" y2="180" style="stroke:var(--orange)" stroke-width="5" stroke-linecap="round"/>
+                <text x="250" y="135">H = 0</text>
+                <text x="160" y="226" text-anchor="middle">V = 1</text>
+                <text x="540" y="76">D = 0</text>
+                <text x="540" y="196">A = 1</text>
+            </g>
+        </svg>
+        <figcaption>藍色代表位元 0，橘色代表位元 1。模擬器格子裡的斜線，就是這顆光子的偏振方向。</figcaption>
+    </figure>
+    <div class="say">想像戴偏光太陽眼鏡：鏡片只讓某個方向振動的光通過。Bob 的量測就像拿一片偏光片去「問」光子：你是水平還是垂直？</div>
+
+    <h3><span class="num">2</span>量測會擾動，量子態無法複製</h3>
+    <p>如果用「+」基底去量一顆「×」基底的光子（例如 D），結果會是 50% 水平、50% 垂直，完全隨機，而且量完以後光子就<b>真的變成</b>水平或垂直，原本的 D 消失了。這叫做<b>量測塌縮</b>，機率由 <b>Born rule</b> 決定：P = cos²(光子角度 − 量測角度)。</p>
+    <p>另一條定律是<b>不可複製定理</b>：沒有任何機器能完美複製一個未知的量子態。所以 Eve 不能先「影印」光子、留一份慢慢研究。</p>
+    <div class="say">Eve 想偷看，就必須量測；但她不知道 Alice 用哪組基底，猜錯一半的機會。猜錯時她會把光子「改掉」，Bob 那邊就會出現錯誤。這就是 BB84 能抓到竊聽的原因。</div>
+
+    <h3><span class="num">3</span>只公開基底，不公開位元</h3>
+    <p>傳完光子後，Alice 和 Bob 在公開頻道上說「我第 1 顆用 +、第 2 顆用 ×……」，只保留兩人基底相同的那些位元。Eve 聽到基底也沒用，因為光子早就送到了，她無法回頭重新量。</p>
+    <div class="say">他們公開的是「我用哪一種眼鏡」，而不是「我看到什麼」。眼鏡相同的那一半結果會完全一致，變成共同的祕密。</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="steps">
+    <h2>六個步驟：畫面、物理、說法</h2>
+    <p class="lead">在模擬器按「下一步」一次走一步，邊走邊講。</p>
+    <div class="flow"><span>① 準備</span><i>→</i><span>② 傳送</span><i>→</i><span>③ 篩選</span><i>→</i><span>④ 估計</span><i>→</i><span>⑤ 糾錯</span><i>→</i><span>⑥ 放大</span></div>
+
+    <div class="step">
+        <h3><span class="num">1</span>準備（Prepare）</h3>
+        <div class="cols">
+            <div><b class="tag">畫面上</b>Alice 的格子出現斜線和 0/1。選雷射光源時，右上角的「2γ」代表這個脈衝有 2 顆光子，「0γ」則是空脈衝。</div>
+            <div><b class="tag">物理上</b>Alice 用量子亂數產生器選基底和位元，再用偏振調制器把光子調到 H/V/D/A 其中一個。真實的雷射光子數是隨機的，服從 Poisson 分佈。</div>
+            <div><b class="tag">怎麼說</b>「每一格是一顆光子。斜線是它的偏振方向，也就是 Alice 想傳的位元。注意很多格是空的，真實的雷射常常一顆光子都沒有。」</div>
+        </div>
+    </div>
+    <div class="step">
+        <h3><span class="num">2</span>傳送與量測（Transmit）</h3>
+        <div class="cols">
+            <div><b class="tag">畫面上</b>Bob 的格子出現淡色的「+」或「×」（他選的基底）和量到的位元。「·」是沒偵測到，「E」是被 Eve 動過的光子（上帝視角）。</div>
+            <div><b class="tag">物理上</b>光子在光纖裡被吸收或散射（損耗），偏振可能被扭轉。Bob 用偏振分光器加兩個單光子偵測器量測；偵測器有效率限制，也會因熱雜訊誤響（暗計數）。</div>
+            <div><b class="tag">怎麼說</b>「Bob 也隨機選眼鏡去看。點任何一格，可以看到 Born rule 算出的機率：基底相同時結果確定，不同時就是丟銅板。」</div>
+        </div>
+    </div>
+    <div class="step">
+        <h3><span class="num">3</span>篩選（Sift）</h3>
+        <div class="cols">
+            <div><b class="tag">畫面上</b>基底不同或沒偵測到的格子變淡，大約剩一半。</div>
+            <div><b class="tag">物理上</b>透過經過認證的古典通道（例如一般網路，但每則訊息都要驗證身分）公開基底。這一步不會洩漏位元值。</div>
+            <div><b class="tag">怎麼說</b>「眼鏡不同的結果是亂猜的，直接丟掉。BB84 天生就會浪費一半。」</div>
+        </div>
+    </div>
+    <div class="step">
+        <h3><span class="num">4</span>估計 QBER（Estimate）</h3>
+        <div class="cols">
+            <div><b class="tag">畫面上</b>黃框「S」是被抽出來公開比對的位元，紅色 ✗ 是錯誤。報告區顯示 QBER（估計值與真實值）。</div>
+            <div><b class="tag">物理上</b>QBER（量子位元錯誤率）同時反映通道雜訊和竊聽。理論上超過約 11% 就不可能保證安全（Shor–Preskill 2000）。</div>
+            <div><b class="tag">怎麼說</b>「這是體溫計。抽一部分位元出來對答案，錯太多就代表有人動過，整批作廢。」</div>
+        </div>
+    </div>
+    <div class="step">
+        <h3><span class="num">5</span>糾錯（Correct，Cascade）</h3>
+        <div class="cols">
+            <div><b class="tag">畫面上</b>Bob 格子上出現 ↻，代表被修正的錯誤位元；報告區顯示公開了多少同位位元。</div>
+            <div><b class="tag">物理上</b>Cascade 把金鑰切成區塊，比對每塊的奇偶性（同位），對不上就二分搜尋找出錯誤。每公開一個同位，Eve 就多知道 1 位元的資訊。</div>
+            <div><b class="tag">怎麼說</b>「就像兩個人對帳：先比總和，不一樣再對半拆開找。代價是對帳的過程會被別人聽到。」</div>
+        </div>
+    </div>
+    <div class="step">
+        <h3><span class="num">6</span>隱私放大（Amplify）</h3>
+        <div class="cols">
+            <div><b class="tag">畫面上</b>金鑰位元變綠，下方顯示最終金鑰，以及 Eve 對它還知道幾個位元。</div>
+            <div><b class="tag">物理上</b>用隨機的 Toeplitz 矩陣（一種 2-universal 雜湊）把 n 位元壓縮成 ℓ 位元。只要壓縮得夠多，Eve 的部分知識會被「稀釋」到幾乎為零。模擬器用 GF(2) 線性代數精確算出 Eve 剩下的資訊量。</div>
+            <div><b class="tag">怎麼說</b>「Eve 也許知道其中幾個位元，但我們把每個新位元都做成很多舊位元的混合，她只要漏掉一個，就完全猜不到。」</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="params">
+    <h2>參數對照真實硬體</h2>
+    <p class="lead">左側「設定」面板的每一個欄位，都對應實驗室裡一個真實的元件。</p>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>參數</th><th>模擬器中的意義</th><th>真實世界</th><th>典型值</th></tr></thead>
+        <tbody>
+            <tr><td>光源類型</td><td>單光子源，或衰減雷射</td><td>理想的單光子源還很難做；商用系統多半把雷射衰減到平均不到一顆光子</td><td>衰減雷射為主</td></tr>
+            <tr><td>平均光子數 μ</td><td>每個脈衝平均幾顆光子（Poisson）</td><td>可變光衰減器控制；μ 太大容易被 PNS，太小金鑰率低</td><td>0.1–0.5</td></tr>
+            <tr><td>光纖長度、損耗</td><td>穿透率 η = 10<sup>−αL/10</sup></td><td>標準單模光纖在 1550 nm 的損耗；超低損耗光纖更好</td><td>0.2 dB/km（超低損耗約 0.16）</td></tr>
+            <tr><td>偏振漂移</td><td>偏振被固定轉了 θ，錯誤率 sin²θ</td><td>光纖受溫度、彎曲、應力影響會轉動偏振；系統要用主動偏振補償</td><td>補償後約 1–3% QBER</td></tr>
+            <tr><td>去極化</td><td>隨機 Pauli 錯誤</td><td>光學元件不完美、偏振模色散</td><td>小於 1%</td></tr>
+            <tr><td>偵測效率</td><td>到達的光子被記錄到的比例</td><td>InGaAs 雪崩二極體（APD）或超導奈米線偵測器（SNSPD）</td><td>APD 約 10–25%，SNSPD 可達 80–90% 以上</td></tr>
+            <tr><td>暗計數</td><td>沒有光子也誤響的機率</td><td>熱雜訊、後脈衝；長距離時是主要錯誤來源</td><td>APD 約 10⁻⁶–10⁻⁵／閘，SNSPD 更低</td></tr>
+            <tr><td>Bob 的基底</td><td>隨機、手動或簽名</td><td>真實系統用量子亂數產生器（QRNG），或用被動分光器讓光子「自己選」</td><td>必須真正隨機</td></tr>
+            <tr><td>犧牲位元比例</td><td>公開多少位元來估 QBER</td><td>真實系統依區塊大小最佳化</td><td>大區塊下只需很小比例</td></tr>
+            <tr><td>安全性分析</td><td>漸近或有限金鑰</td><td>正式系統一定要用有限金鑰分析，附帶失敗機率 ε</td><td>ε ≈ 10⁻⁹–10⁻¹⁰</td></tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="say">右邊那排灰字（光纖穿透率、預期偵測率、本質 QBER）是根據你設的參數即時算出來的，可以拿來跟實際跑出來的結果對照。</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="attacks">
+    <h2>三種竊聽攻擊</h2>
+    <p class="lead">打開「顯示 Eve 的動作」可以看到她動了哪些光子；真實的 Alice 和 Bob 看不到這些。</p>
+    <div class="grid2">
+        <div class="card">
+            <h4>🕵 攔截重送（Intercept–resend）</h4>
+            <p><b>做法：</b>Eve 截下光子，隨機選基底量測，再照結果重新送一顆給 Bob。</p>
+            <p><b>結果：</b>她有一半機率選錯基底；選錯時 Bob 有一半機率出錯，所以受攻擊的位元 QBER = ½ × ½ = <b>25%</b>，遠超過 11%，一定會被抓到。</p>
+            <p><b>真實意義：</b>這是最直覺的攻擊，也是 BB84 最經典的示範。</p>
+        </div>
+        <div class="card">
+            <h4>✂ 光子數分離（PNS）</h4>
+            <p><b>做法：</b>雷射脈衝有時含 2 顆以上光子。Eve 偷走其中一顆存起來，其他放行；等基底公開後再用正確基底量測。她還會用更低損耗的線路，讓 Bob 看起來偵測率正常。</p>
+            <p><b>結果：</b><b>完全不產生錯誤</b>。模擬器裡的「Silent attack」：QBER 0%，系統宣告安全，但在 25 km 都會光纖情境下，平均 59% 的金鑰被 Eve 知道。</p>
+            <p><b>防禦：</b>誘騙態（decoy state）：Alice 隨機混入不同強度的脈衝，Eve 分不出來，統計就會露餡。</p>
+        </div>
+        <div class="card">
+            <h4>📝 已知 Bob 的基底圖樣</h4>
+            <p><b>做法：</b>如果 Bob 的基底可以預測（例如每次都用同一個簽名），Eve 就用相同基底量測。</p>
+            <p><b>結果：</b>沒有錯誤，Eve 知道 <b>100%</b> 的金鑰。</p>
+            <p><b>真實意義：</b>BB84 的安全性建立在「隨機」上。這也是重新定位簽名功能的理由：簽名適合用來認證古典通道的身分，不適合產生基底。</p>
+        </div>
+    </div>
+    <div class="say">第一種攻擊會被物理抓到；第二、三種攻擊利用的是「實作不完美」：光源不是單光子、亂數不夠隨機。現代 QKD 研究的重點，就是把這些實作漏洞補起來。</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="lab">
+    <h2>實驗室七張圖怎麼講</h2>
+    <p class="lead">每張圖都是「理論曲線＋光子層級蒙地卡羅模擬」。點能貼在線上，就代表模擬器的物理是對的。</p>
+
+    <details open>
+        <summary>① 竊聽一定留下痕跡（QBER 與攔截比例）</summary>
+        <p><b>看法：</b>橫軸是 Eve 攔截的比例 f，縱軸是 QBER。理論公式 e(1 − f/2) + f/4：攔截越多，錯誤率越高。</p>
+        <p><b>一句話：</b>通道本身 2% 雜訊時，Eve 最多只能攔 38%，再多就觸發 11% 警報；就算攔得少，隱私放大也會把她知道的部分擠掉。</p>
+        <p><b>可能被問：</b>「Eve 只攔一點點呢？」→ 她得到的資訊也只有一點點，而且會被隱私放大移除。</p>
+    </details>
+    <details>
+        <summary>② 為什麼門檻是 11%（資訊競賽）</summary>
+        <p><b>看法：</b>藍線是 Bob 對 Alice 位元的了解 1 − h(Q)，其他三條是 Eve 在不同攻擊下能知道的資訊。只要藍線在上面，就能產生金鑰。</p>
+        <p><b>一句話：</b>面對量子力學允許的最強攻擊，兩條線在 QBER = 11% 交叉，這就是 Shor–Preskill 門檻；如果 Eve 只能一顆一顆攻擊，門檻可以放寬到 14.6%。</p>
+    </details>
+    <details>
+        <summary>③ 抓到 Eve 需要足夠的樣本（抽樣分佈）</summary>
+        <p><b>看法：</b>藍色是正常通道 500 輪實驗的 QBER 估計值分佈，橘色是有 Eve 的分佈。兩座山重疊越多，越容易誤判。</p>
+        <p><b>一句話：</b>只抽 50 位元時，Eve 只有約 70% 的機率被抓到；抽 1000 位元時兩者完全分開。所以真實系統要用很大的區塊。</p>
+    </details>
+    <details>
+        <summary>④ 誘騙態延長傳輸距離（金鑰率與距離）</summary>
+        <p><b>看法：</b>縱軸是對數刻度，每格差 10 倍。紅線（沒有誘騙態）在約 40 km 就掉到零；藍、綠線（有誘騙態）可以撐到約 140 km；黃線是理想單光子源的上限。</p>
+        <p><b>一句話：</b>沒有誘騙態，每個多光子脈衝都要當成已經被 PNS 偷走；有了誘騙態，可以精確估計哪些偵測來自單光子，距離就變成 3 倍以上。</p>
+        <p><b>補充：</b>曲線最後急速下墜，是因為訊號光子隨距離指數減少，但暗計數固定不變，最後錯誤率衝破門檻。</p>
+    </details>
+    <details>
+        <summary>⑤ 誘騙態揭穿 PNS 攻擊（比較表）</summary>
+        <p><b>看法：</b>比較正常通道和 PNS 攻擊。Bob 看到的訊號增益幾乎一樣（差約 1%），QBER 也正常；但誘騙脈衝的增益掉了約 4 倍，算出來的單光子產率下界變成負數。</p>
+        <p><b>一句話：</b>Eve 只能根據光子數決定要不要攻擊，分不出哪些脈衝是誘騙的；誘騙脈衝的統計一對不上，攻擊就曝光了。</p>
+    </details>
+    <details>
+        <summary>⑥ 有限區塊會損失金鑰（有限金鑰效應）</summary>
+        <p><b>看法：</b>橫軸是區塊大小（對數），縱軸是能變成祕密金鑰的比例。區塊太小時，統計誤差會吃掉全部金鑰。</p>
+        <p><b>一句話：</b>QBER 3% 時，大約要 10⁷ 個位元才能達到理論極限的 90%。模擬器的 100 格網格只能「示範」協定，不能「認證」一把真正的金鑰。</p>
+    </details>
+    <details>
+        <summary>⑦ 實作的流程與理論一致（自我驗證）</summary>
+        <p><b>看法：</b>綠點是模擬器自己的 Cascade＋Toeplitz 流程實際產生的金鑰比例，落在理論曲線附近。</p>
+        <p><b>一句話：</b>這張圖證明程式不是畫出漂亮的公式而已，而是真的跑完整個協定。實測 Cascade 效率 f ≈ 1.2，也就是比 Shannon 極限多公開約 20% 的資訊。</p>
+    </details>
+</section>
+
+<!-- ================================================================ -->
+<section id="qiskit">
+    <h2>接上真正的量子電腦</h2>
+    <p class="lead">模擬器裡的光子，可以變成 IBM 量子處理器上的真實 qubit。</p>
+    <ol>
+        <li>在模擬器至少跑到第 2 步，按右下角的 <b>session .json</b> 下載。</li>
+        <li>安裝套件（只需一次）：<pre>pip install qiskit qiskit-aer qiskit-ibm-runtime</pre></li>
+        <li>執行：<pre>cd v2\tools
+python run_on_qiskit.py bb84-session.json              # 理想模擬器
+python run_on_qiskit.py bb84-session.json --noise 0.02 # 加入雜訊
+python run_on_qiskit.py bb84-session.json --ibm        # IBM 真機（需先儲存帳號 token）</pre></li>
+    </ol>
+    <p><b>電路對應：</b>Alice 準備 = <code>reset</code>＋<code>x</code>（位元 1）＋<code>h</code>（× 基底）；Eve = 在她的基底下 <code>measure</code>；Bob = <code>h</code>（× 基底）＋<code>measure</code>。<code>h</code>（Hadamard 閘）就是把直角基底轉成對角基底。</p>
+    <div class="say">在真機上，QBER 來自量子晶片本身的閘錯誤和讀取錯誤，這些就扮演了「光纖雜訊」的角色。所以這是在真正的量子硬體上跑 BB84 的量子部分。</div>
+    <div class="warn">電路裡沒有光纖損耗、多光子脈衝和偵測器效應；PNS 攻擊也無法寫成電路。IBM 真機的部分需要你自己的帳號實際跑過，才能在報告中宣稱。</div>
+</section>
+
+<!-- ================================================================ -->
+<section id="demo">
+    <h2>3 分鐘現場 Demo 腳本</h2>
+    <p class="lead">研討會攤位或口頭報告時照著走。</p>
+    <ol class="demo">
+        <li><b>理想情況</b> <span class="time">約 60 秒</span><br>情境選「教科書」，按「開始」再一步步按「下一步」。每一步用上面的「怎麼說」講一句。最後指著綠色金鑰說：「這就是只有他們兩人知道的金鑰。」</li>
+        <li><b>Eve 出現</b> <span class="time">約 30 秒</span><br>竊聽者改成「攔截重送」，按「全部執行」。QBER 跳到約 25%，紅色橫幅顯示中止。「量子力學幫我們抓到小偷。」</li>
+        <li><b>無聲的攻擊</b> <span class="time">約 45 秒</span><br>情境選「都會光纖」、竊聽者選 PNS，按「全部執行」。QBER 是 0%，但橫幅說 Eve 知道其中好幾位元。「理論安全不等於實作安全。真實的雷射會一次送出好幾顆光子。」</li>
+        <li><b>解法</b> <span class="time">約 45 秒</span><br>切到「實驗室」分頁，給聽眾看誘騙態那張表，再看距離那張圖：「加入誘騙態，攻擊就曝光，距離也從 40 km 延長到 140 km。」</li>
+    </ol>
+</section>
+
+<!-- ================================================================ -->
+<section id="faq">
+    <h2>常見問題</h2>
+    <details><summary>為什麼不能像一般網路一樣加放大器？</summary><p>放大就等於複製光子的量子態，而不可複製定理禁止這件事。硬放大會破壞偏振資訊，效果跟竊聽一樣。所以 QKD 的距離受光纖損耗限制，長距離要靠可信任中繼站、衛星，或研究中的量子中繼器。</p></details>
+    <details><summary>為什麼要丟掉一半的位元？</summary><p>基底不同時，Bob 的結果是 50/50 的隨機猜測，沒有任何資訊。這是 BB84 用兩組基底換取安全性的代價。（有些改良版會讓一組基底用得比較多，可以減少浪費。）</p></details>
+    <details><summary>為什麼門檻剛好是 11%？</summary><p>它是 1 − 2h(Q) = 0 的解，h 是二元熵。直覺上：糾錯要公開約 h(Q) 的資訊，隱私放大要再扣掉 Eve 可能知道的 h(Q)，兩項加起來吃光整把金鑰的那一點就是 11%。這是 Shor 與 Preskill 在 2000 年證明的。</p></details>
+    <details><summary>量子電腦能破解 BB84 嗎？</summary><p>不能，BB84 的安全性來自物理定律，不依賴任何計算難題，所以算力再強也沒用。但實作上的漏洞（例如偵測器被強光致盲）是另一回事，這也是 MDI-QKD 等新協定要解決的問題。</p></details>
+    <details><summary>跟「後量子密碼」（PQC）有什麼不同？</summary><p>PQC 是換成量子電腦也難解的新數學問題（NIST 在 2024 年發布了第一批標準），只要更新軟體，但安全性仍是「目前相信很難」。QKD 的安全性來自物理，但需要專用的光學硬體和光纖。兩者常被視為互補。</p></details>
+    <details><summary>古典通道為什麼要「經過認證」？</summary><p>如果不認證，Eve 可以假扮 Bob 跟 Alice 通訊、再假扮 Alice 跟 Bob 通訊（中間人攻擊）。認證需要事先共享一小段金鑰，所以 QKD 更精確的說法是「金鑰擴展」：用一小段共享金鑰，換到源源不絕的新金鑰。</p></details>
+    <details><summary>真實系統能多快、多遠？</summary><p>商用光纖 QKD 系統通常在都會距離（數十公里）運作。研究紀錄包括 421 km 的光纖 BB84（2018），以及雙場 QKD 超過 1000 km 的實驗；2017 年中國「墨子號」衛星做到了衛星與地面之間的量子金鑰分發。距離越長，金鑰率越低。</p></details>
+    <details><summary>這個模擬是「真的量子」嗎？</summary><p>模擬器用一般電腦精確計算量子力學給的機率（每顆光子的狀態向量和 Born rule），再用亂數抽出結果，物理上是正確的，但它不是量子硬體。要在真的量子硬體上跑，請用 Qiskit 匯出功能。</p></details>
+    <details><summary>Eve 只攔截很少的光子，不就不會被發現？</summary><p>她攔得少，QBER 只會升一點，但她得到的資訊也很少；隱私放大會根據量到的 QBER 把這些資訊壓掉。所以 Eve 不是被抓到，就是拿不到有用的東西。</p></details>
+</section>
+
+<!-- ================================================================ -->
+<section id="limits">
+    <h2>模擬的限制（誠實說明）</h2>
+    <p class="lead">被問到時主動說明，反而顯得專業。</p>
+    <ul>
+        <li><b>雷射光源時套用單光子公式：</b>模擬器分頁選雷射光源時，金鑰長度仍用 n[1 − h(Q)]，而 Shor–Preskill 的證明只涵蓋單光子源。這正是 PNS 攻擊在那裡能成功的原因，也是刻意保留的教學示範；正確做法（誘騙態分析）在實驗室分頁。</li>
+        <li><b>漸近模式不計抽樣誤差：</b>格子很小時，估計的 QBER 可能明顯低於真實值。要嚴謹請切換到「有限金鑰」模式，但小格子幾乎一定會中止。</li>
+        <li><b>假設古典通道已認證：</b>沒有扣除認證所需的金鑰。</li>
+        <li><b>相位錯誤用整體 QBER 估計：</b>目前的通道和攻擊模型都是對稱的，所以結果正確。</li>
+        <li><b>不含偵測器旁通道攻擊：</b>致盲攻擊、時間位移攻擊等不在範圍內。</li>
+        <li><b>最強的相干攻擊</b>由安全性公式涵蓋，沒有逐顆光子模擬。</li>
+    </ul>
+</section>
+
+<!-- ================================================================ -->
+<section id="glossary">
+    <h2>中英名詞對照</h2>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>中文</th><th>English</th><th>一句話解釋</th></tr></thead>
+        <tbody>
+            <tr><td>量子金鑰分發</td><td>Quantum key distribution (QKD)</td><td>用量子態分享祕密金鑰</td></tr>
+            <tr><td>基底</td><td>Basis</td><td>量測時「戴哪一副眼鏡」：+ 或 ×</td></tr>
+            <tr><td>偏振</td><td>Polarisation</td><td>光的電場振動方向</td></tr>
+            <tr><td>量子位元錯誤率</td><td>QBER</td><td>篩選後位元中 Alice 與 Bob 不一致的比例</td></tr>
+            <tr><td>篩選</td><td>Sifting</td><td>只留基底相同的位元</td></tr>
+            <tr><td>糾錯</td><td>Error correction / reconciliation</td><td>修正剩下的不一致，本模擬用 Cascade</td></tr>
+            <tr><td>隱私放大</td><td>Privacy amplification</td><td>用雜湊壓縮金鑰，消除 Eve 的部分資訊</td></tr>
+            <tr><td>不可複製定理</td><td>No-cloning theorem</td><td>未知量子態無法完美複製</td></tr>
+            <tr><td>誘騙態</td><td>Decoy state</td><td>混入不同強度的脈衝，揭穿 PNS 攻擊</td></tr>
+            <tr><td>光子數分離攻擊</td><td>Photon-number splitting (PNS)</td><td>偷走多光子脈衝中多出來的光子</td></tr>
+            <tr><td>暗計數</td><td>Dark count</td><td>沒有光子時偵測器的誤響</td></tr>
+            <tr><td>有限金鑰分析</td><td>Finite-key analysis</td><td>把有限樣本的統計誤差算進安全性</td></tr>
+            <tr><td>弱相干光</td><td>Weak coherent pulse (WCP)</td><td>衰減到平均不到一顆光子的雷射脈衝</td></tr>
+            <tr><td>超導奈米線單光子偵測器</td><td>SNSPD</td><td>高效率、低雜訊的單光子偵測器</td></tr>
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<footer>BB84 Simulator v2 · 解說手冊 · <a href="index.html">回到模擬器</a></footer>
+</div>
+<button class="theme-btn" id="theme-btn" type="button">切換深淺色</button>
+<script>
+(function () {
+    var root = document.documentElement;
+    try { var t = localStorage.getItem('bb84-theme'); if (t) root.dataset.theme = t; } catch (e) { /* storage unavailable */ }
+    document.getElementById('theme-btn').addEventListener('click', function () {
+        var dark = root.dataset.theme ? root.dataset.theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = dark ? 'light' : 'dark';
+        try { localStorage.setItem('bb84-theme', root.dataset.theme); } catch (e) { /* storage unavailable */ }
+    });
+})();
+</script>
+</body>
+</html>
