@@ -1,0 +1,73 @@
+# Checks the scripts and the physics engine on every push and pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax check
+        run: for f in js/*.js; do node --check "$f"; done
+
+      - name: Every script referenced by index.html exists
+        run: |
+          grep -o 'src="[^"]*"' index.html | cut -d'"' -f2 | while read -r f; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+          done
+
+      - name: Physics engine reproduces known BB84 results
+        run: |
+          cat > check.js <<'EOF'
+          const assert = require('node:assert/strict');
+          ['rng', 'quantum', 'theory', 'postprocess'].forEach(f => require('./js/' + f + '.js'));
+          const B = globalThis.BB84;
+          const sim = (over, N, seed) => {
+            const P = Object.assign(B.defaultParams(), over), ctx = B.prepareChannel(P), rng = B.makeRng(seed);
+            const pulses = Array.from({ length: N }, () => B.simulatePulse(P, ctx, rng));
+            return { pulses, rng };
+          };
+          const qber = ps => {
+            const s = ps.filter(p => p.click && p.aBasis === p.bBasis);
+            return s.filter(p => p.aBit !== p.bBit).length / s.length;
+          };
+
+          // Born rule: conjugate bases give 50/50
+          assert.ok(Math.abs(B.probZero(B.stateAngle(1, 0), 0) - 0.5) < 1e-12);
+          // ideal channel: no errors
+          assert.equal(qber(sim({}, 20000, 'ideal').pulses), 0);
+          // full intercept–resend: QBER ≈ 25%
+          const ir = qber(sim({ eve: { mode: 'intercept', fraction: 1 } }, 40000, 'ir').pulses);
+          assert.ok(Math.abs(ir - 0.25) < 0.015, 'intercept-resend QBER ' + ir);
+          // polarisation drift θ: QBER = sin²θ
+          const th = Math.asin(Math.sqrt(0.033)) / B.DEG;
+          const dr = qber(sim({ misalign: th }, 40000, 'drift').pulses);
+          assert.ok(Math.abs(dr - 0.033) < 0.006, 'drift QBER ' + dr);
+          // Shor–Preskill threshold
+          assert.ok(Math.abs(B.QBER_THRESHOLD - 0.110028) < 1e-5);
+          // honest session: secure key, Eve holds nothing after hashing
+          let r = (({ pulses, rng }) => B.postProcess(pulses, {}, rng))(sim({}, 256, 'honest'));
+          assert.equal(r.aborted, false);
+          assert.equal(r.eveInfoAfter, 0);
+          // attacked session aborts
+          r = (({ pulses, rng }) => B.postProcess(pulses, {}, rng))(sim({ eve: { mode: 'intercept', fraction: 1 } }, 400, 'abort'));
+          assert.equal(r.aborted, true);
+          // PNS on a laser source without decoys leaks silently
+          r = (({ pulses, rng }) => B.postProcess(pulses, {}, rng))(sim({ source: 'wcp', mu: 0.5, distance: 50, etaDet: 0.8, pDark: 1e-6, eve: { mode: 'pns', fraction: 1 } }, 2000, 'pns'));
+          assert.equal(r.qEst, 0);
+          assert.ok(r.eveInfoAfter > 0);
+          console.log('all physics checks passed');
+          EOF
+          node check.js

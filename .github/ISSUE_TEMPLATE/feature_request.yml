@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a new protocol, attack, chart or teaching feature
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to add?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is it useful?
+      description: For teaching, for research demonstrations, or for realism of the physics model?
+  - type: textarea
+    id: refs
+    attributes:
+      label: References
+      description: Papers or formulas the feature should follow, if any.
