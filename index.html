@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BB84 Simulator</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <h1>BB84 Simulator</h1>
+            <span class="brand-sub" data-i18n>Quantum key distribution, photon by photon</span>
+        </div>
+        <nav class="tabs" role="tablist">
+            <button role="tab" class="tab" aria-selected="true" data-tab="sim" data-i18n>Simulator</button>
+            <button role="tab" class="tab" aria-selected="false" data-tab="lab" data-i18n>Lab · Data</button>
+            <button role="tab" class="tab" aria-selected="false" data-tab="guide" data-i18n>Guide</button>
+        </nav>
+        <div class="top-actions">
+            <a class="ghost-btn" href="explainer.html" target="_blank" rel="noopener" data-i18n>How to explain</a>
+            <button id="theme-btn" class="ghost-btn" data-i18n-title="Toggle light / dark" title="Toggle light / dark" data-i18n>Theme</button>
+            <button id="lang-btn" class="ghost-btn" data-i18n-title="Switch language" title="Switch language">English</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- ================= SIMULATOR ================= -->
+        <section id="tab-sim" class="tab-panel" role="tabpanel">
+            <aside class="card setup">
+                <h2 data-i18n>Setup</h2>
+                <label><span data-i18n>Scenario</span>
+                    <select id="preset">
+                        <option value="textbook" data-i18n>Textbook (ideal)</option>
+                        <option value="lab" data-i18n>Lab bench · 1 km, laser source</option>
+                        <option value="metro" data-i18n>Metro fiber · 25 km</option>
+                        <option value="noisy" data-i18n>Noisy channel · 5 km</option>
+                        <option value="custom" data-i18n>Custom</option>
+                    </select>
+                </label>
+                <label><span data-i18n>Pulses</span>
+                    <select id="grid-size">
+                        <option value="6">6 × 6 = 36</option>
+                        <option value="8">8 × 8 = 64</option>
+                        <option value="10" selected>10 × 10 = 100</option>
+                        <option value="12">12 × 12 = 144</option>
+                        <option value="16">16 × 16 = 256</option>
+                        <option value="20">20 × 20 = 400</option>
+                    </select>
+                </label>
+
+                <fieldset>
+                    <legend data-i18n>Source</legend>
+                    <label><span data-i18n>Type</span>
+                        <select id="source">
+                            <option value="single" data-i18n>Single-photon source</option>
+                            <option value="wcp" data-i18n>Attenuated laser (weak coherent)</option>
+                        </select>
+                    </label>
+                    <label class="row" id="mu-row"><span data-i18n>Mean photons μ</span> <input id="mu" type="number" min="0.05" max="1.5" step="0.05" value="0.5"></label>
+                </fieldset>
+
+                <fieldset>
+                    <legend data-i18n>Channel &amp; detectors</legend>
+                    <label class="row"><span data-i18n>Fiber length (km)</span> <input id="distance" type="number" min="0" max="200" step="1" value="0"></label>
+                    <label class="row"><span data-i18n>Loss (dB/km)</span> <input id="alpha" type="number" min="0" max="1" step="0.01" value="0.2"></label>
+                    <label class="row"><span data-i18n>Polarisation drift (°)</span> <input id="misalign" type="number" min="0" max="45" step="0.5" value="0"></label>
+                    <label class="row"><span data-i18n>Depolarisation (%)</span> <input id="depol" type="number" min="0" max="50" step="0.5" value="0"></label>
+                    <label class="row"><span data-i18n>Detector efficiency (%)</span> <input id="etaDet" type="number" min="1" max="100" step="1" value="100"></label>
+                    <label class="row"><span data-i18n>Dark count / gate</span>
+                        <select id="pDark">
+                            <option value="0">0</option>
+                            <option value="1e-7">10⁻⁷</option>
+                            <option value="1e-6">10⁻⁶</option>
+                            <option value="1e-5">10⁻⁵</option>
+                            <option value="1e-3">10⁻³</option>
+                        </select>
+                    </label>
+                    <p class="hint" id="channel-hint"></p>
+                </fieldset>
+
+                <fieldset>
+                    <legend data-i18n>Bob's bases</legend>
+                    <select id="bob-mode">
+                        <option value="random" data-i18n>Random (PRNG)</option>
+                        <option value="manual" data-i18n>Manual — click cells</option>
+                        <option value="signature" data-i18n>Signature — draw a pattern</option>
+                    </select>
+                </fieldset>
+
+                <fieldset>
+                    <legend data-i18n>Eavesdropper (Eve)</legend>
+                    <select id="eve-mode">
+                        <option value="none" data-i18n>No Eve</option>
+                        <option value="intercept" data-i18n>Intercept–resend</option>
+                        <option value="pns" data-i18n>Photon-number splitting (PNS)</option>
+                        <option value="pattern" data-i18n>Knows Bob's basis pattern</option>
+                    </select>
+                    <label class="row" id="fraction-row"><span data-i18n>Pulses attacked (%)</span> <input id="eve-fraction" type="number" min="0" max="100" step="5" value="100"></label>
+                    <p class="hint" id="eve-hint"></p>
+                </fieldset>
+
+                <fieldset>
+                    <legend data-i18n>Post-processing</legend>
+                    <label class="row"><span data-i18n>Bits sacrificed for QBER (%)</span> <input id="sample-frac" type="number" min="5" max="60" step="5" value="25"></label>
+                    <label><span data-i18n>Security analysis</span>
+                        <select id="security">
+                            <option value="asymptotic" data-i18n>Asymptotic (textbook)</option>
+                            <option value="finite" data-i18n>Finite-key (ε = 10⁻¹⁰)</option>
+                        </select>
+                    </label>
+                    <label class="row"><span data-i18n>Seed (optional)</span> <input id="seed" type="text" placeholder="random" data-i18n-placeholder="random"></label>
+                </fieldset>
+            </aside>
+
+            <div class="card stage">
+                <ol class="stepper" id="stepper">
+                    <li data-step="1"><span>1</span><i data-i18n>Prepare</i></li>
+                    <li data-step="2"><span>2</span><i data-i18n>Transmit</i></li>
+                    <li data-step="3"><span>3</span><i data-i18n>Sift</i></li>
+                    <li data-step="4"><span>4</span><i data-i18n>Estimate</i></li>
+                    <li data-step="5"><span>5</span><i data-i18n>Correct</i></li>
+                    <li data-step="6"><span>6</span><i data-i18n>Amplify</i></li>
+                </ol>
+
+                <div class="arena">
+                    <div class="party">
+                        <h3>Alice</h3>
+                        <div class="grid" id="alice-grid"></div>
+                    </div>
+                    <div class="channel">
+                        <div class="fiber" id="fiber-label">0 km</div>
+                        <div class="eve-badge" id="eve-badge" hidden>Eve</div>
+                    </div>
+                    <div class="party">
+                        <h3>Bob</h3>
+                        <div class="grid-wrap" id="bob-wrap">
+                            <div class="grid" id="bob-grid"></div>
+                        </div>
+                        <div class="bob-tools" id="bob-tools" hidden>
+                            <button data-fill="0" data-i18n>Fill +</button>
+                            <button data-fill="1" data-i18n>Fill ×</button>
+                            <button data-fill="rand" data-i18n>Random</button>
+                            <button data-fill="clear" data-i18n>Clear</button>
+                            <button id="draw-btn" class="accent" data-i18n>Draw signature</button>
+                            <button id="apply-sig" class="accent" hidden data-i18n>Apply</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button id="btn-step" class="primary">Start</button>
+                    <button id="btn-run" data-i18n>Run all</button>
+                    <button id="btn-reset" data-i18n>Reset</button>
+                </div>
+                <div class="status" id="status" aria-live="polite" data-i18n>Choose a scenario, then press Start.</div>
+                <div class="banner" id="banner" hidden></div>
+
+                <ul class="cell-legend">
+                    <li><span class="sw sw-prep"></span><i data-i18n>Photon polarisation (line) + bit</i></li>
+                    <li><span class="sw sw-lost">·</span><i data-i18n>No click (lost)</i></li>
+                    <li><span class="sw sw-out"></span><i data-i18n>Discarded at sifting</i></li>
+                    <li><span class="sw sw-sample">S</span><i data-i18n>Sacrificed to estimate QBER</i></li>
+                    <li><span class="sw sw-err">✗</span><i data-i18n>Error</i></li>
+                    <li><span class="sw sw-fix">↻</span><i data-i18n>Fixed by Cascade</i></li>
+                    <li><span class="sw sw-key">✓</span><i data-i18n>Key bit</i></li>
+                    <li><span class="sw sw-eve">E</span><i data-i18n>Touched by Eve</i></li>
+                </ul>
+            </div>
+
+            <aside class="card report">
+                <h2 data-i18n>Session report</h2>
+                <div class="tiles" id="tiles"></div>
+                <h3 class="sub" data-i18n>Where the bits go</h3>
+                <div id="funnel"></div>
+                <div class="chart-actions" id="funnel-actions">
+                    <button data-act="table" data-i18n>Table</button>
+                    <button data-act="png">PNG</button>
+                </div>
+                <h3 class="sub" data-i18n>Final key</h3>
+                <div class="key-out" id="key-out">—</div>
+                <div class="eve-out" id="eve-out"></div>
+
+                <h3 class="sub" data-i18n>Inspect a photon</h3>
+                <div id="inspector" class="inspector"></div>
+
+                <h3 class="sub" data-i18n>Run on a real quantum computer</h3>
+                <p class="hint" data-i18n>Exports this session as an OpenQASM 2.0 circuit (Alice → Eve → Bob on one reused qubit) and a JSON file for <code>tools/run_on_qiskit.py</code>.</p>
+                <div class="chart-actions">
+                    <button id="export-qasm" disabled>.qasm</button>
+                    <button id="export-json" disabled>session .json</button>
+                </div>
+            </aside>
+        </section>
+
+        <!-- ================= LAB ================= -->
+        <section id="tab-lab" class="tab-panel" role="tabpanel" hidden>
+            <div class="lab-filters">
+                <label><span data-i18n>Hardware model</span>
+                    <select id="lab-hw">
+                        <option value="gys" data-i18n>GYS 2004 (InGaAs APD, 1550 nm)</option>
+                        <option value="snspd" data-i18n>Modern SNSPD system (illustrative)</option>
+                    </select>
+                </label>
+                <label><span data-i18n>Seed</span> <input id="lab-seed" type="text" value="poster-2026"></label>
+                <button id="lab-run-all" class="primary" data-i18n>Run all simulations</button>
+                <button id="lab-export-all" data-i18n>Download all figures (PNG)</button>
+                <span class="hint" id="lab-progress"></span>
+            </div>
+            <div class="lab-grid" id="lab-grid"></div>
+        </section>
+
+        <!-- ================= GUIDE ================= -->
+        <section id="tab-guide" class="tab-panel guide" role="tabpanel" hidden>
+            <article class="card prose lang-en">
+                <h2>What BB84 does</h2>
+                <p>Alice and Bob want a shared secret key. Alice encodes each random bit in the polarisation of a photon, choosing at random between the rectilinear basis <b>+</b> (H = 0, V = 1) and the diagonal basis <b>×</b> (D = 0, A = 1). Bob measures each photon in a randomly chosen basis. Afterwards they announce only the <em>bases</em> over a public, authenticated channel and keep the bits where the bases agree. Because non-orthogonal states cannot be copied (no-cloning) or measured without disturbance, any eavesdropper leaves errors behind.</p>
+
+                <h2>The six steps in the simulator</h2>
+                <ol>
+                    <li><b>Prepare</b> — Alice picks a basis and bit for every pulse. A real attenuated laser emits a Poisson number of photons (often zero, sometimes two or more).</li>
+                    <li><b>Transmit &amp; measure</b> — photons cross the fiber (loss 10<sup>−αL/10</sup>), the polarisation may drift or depolarise, Eve may interfere, and Bob's detectors click according to the Born rule, their efficiency and their dark counts.</li>
+                    <li><b>Sift</b> — bases are announced; pulses with no click or different bases are discarded (≈ 50 %).</li>
+                    <li><b>Estimate</b> — a random sample of sifted bits is revealed to measure the quantum bit error rate (QBER). Above ≈ 11 % no secure key is possible, so the session aborts.</li>
+                    <li><b>Error correction</b> — the Cascade protocol finds and fixes the remaining errors with binary-search parity checks. Every revealed parity counts as information leaked to Eve.</li>
+                    <li><b>Privacy amplification</b> — the corrected key is compressed with a random Toeplitz matrix (2-universal hashing) to ℓ bits, removing Eve's partial knowledge.</li>
+                </ol>
+
+                <h2>How the physics is simulated</h2>
+                <ul>
+                    <li><b>State vectors.</b> Each photon is the qubit cos φ|H⟩ + sin φ|V⟩. Measurement outcomes follow the Born rule P(0) = cos²(φ − β) and the state collapses. The four BB84 states, polarisation drift and Pauli errors all stay on this great circle of the Bloch sphere, so tracking φ is an exact state-vector simulation.</li>
+                    <li><b>Source.</b> Single-photon source, or weak coherent pulses with Poisson photon numbers (mean μ). The Lab adds decoy intensities.</li>
+                    <li><b>Channel.</b> Each photon survives the fiber independently; a fixed polarisation rotation θ gives an error sin²θ; depolarisation applies a random Pauli X, Y or Z.</li>
+                    <li><b>Detectors.</b> Two threshold detectors with efficiency η and dark-count probability per gate. Double clicks are assigned a random bit (the squashing model).</li>
+                    <li><b>Eve.</b> <em>Intercept–resend</em> measures in a random basis and resends what she saw (QBER 25 % on attacked pulses). <em>PNS</em> keeps one photon from every multi-photon pulse, blocks single photons and uses a lossless line so Bob's count rate looks normal — she adds no errors. <em>Knows Bob's pattern</em> shows why Bob's bases must be truly random: if they are predictable, Eve measures in Bob's basis and is invisible.</li>
+                    <li><b>Eve's information after hashing</b> is computed exactly over GF(2): the rank of the final-key hash rows relative to the bits she knows plus every parity revealed by Cascade.</li>
+                </ul>
+
+                <h2>Security numbers used</h2>
+                <ul>
+                    <li>Asymptotic key length ℓ = n[1 − h(Q)] − leak<sub>EC</sub> (Shor–Preskill), threshold Q ≈ 11.0 %.</li>
+                    <li>Finite-key length ℓ = n[1 − h(Q + μ)] − leak<sub>EC</sub> − log₂(2/ε<sub>sec</sub>²ε<sub>cor</sub>), after Tomamichel et al. 2012, with ε<sub>sec</sub> = 10⁻¹⁰ and ε<sub>cor</sub> = 10⁻¹².</li>
+                    <li>Decoy-state bounds (vacuum + weak decoy) from Ma, Qi, Zhao &amp; Lo 2005; GLLP for the no-decoy case.</li>
+                </ul>
+
+                <h2>Simplifications to state honestly</h2>
+                <ul>
+                    <li>The classical channel is assumed authenticated; authentication costs are not deducted.</li>
+                    <li>Phase error is estimated from the overall sampled QBER (symmetric BB84).</li>
+                    <li>With a laser source the Simulator tab still applies the single-photon formula, which Shor–Preskill does not cover — this is what makes the PNS attack succeed there. The Lab shows the decoy-state fix.</li>
+                    <li>Detector side-channel attacks (blinding, time-shift) are out of scope; they are what measurement-device-independent QKD addresses.</li>
+                    <li>Coherent attacks are covered by the security bounds, not simulated photon by photon.</li>
+                </ul>
+
+                <h2>References</h2>
+                <ol class="refs">
+                    <li>C. H. Bennett &amp; G. Brassard, “Quantum cryptography: public key distribution and coin tossing,” Proc. IEEE ICCSSP, 175 (1984).</li>
+                    <li>P. W. Shor &amp; J. Preskill, “Simple proof of security of the BB84 quantum key distribution protocol,” Phys. Rev. Lett. 85, 441 (2000).</li>
+                    <li>G. Brassard &amp; L. Salvail, “Secret-key reconciliation by public discussion,” EUROCRYPT ’93, LNCS 765, 410 (1994).</li>
+                    <li>C. A. Fuchs et al., “Optimal eavesdropping in quantum cryptography,” Phys. Rev. A 56, 1163 (1997).</li>
+                    <li>D. Gottesman, H.-K. Lo, N. Lütkenhaus &amp; J. Preskill, “Security of quantum key distribution with imperfect devices,” Quantum Inf. Comput. 4, 325 (2004).</li>
+                    <li>C. Gobby, Z. L. Yuan &amp; A. J. Shields, “Quantum key distribution over 122 km of standard telecom fiber,” Appl. Phys. Lett. 84, 3762 (2004).</li>
+                    <li>W.-Y. Hwang, “Quantum key distribution with high loss: toward global secure communication,” Phys. Rev. Lett. 91, 057901 (2003).</li>
+                    <li>H.-K. Lo, X. Ma &amp; K. Chen, “Decoy state quantum key distribution,” Phys. Rev. Lett. 94, 230504 (2005).</li>
+                    <li>X. Ma, B. Qi, Y. Zhao &amp; H.-K. Lo, “Practical decoy state for quantum key distribution,” Phys. Rev. A 72, 012326 (2005).</li>
+                    <li>V. Scarani et al., “The security of practical quantum key distribution,” Rev. Mod. Phys. 81, 1301 (2009).</li>
+                    <li>M. Tomamichel, C. C. W. Lim, N. Gisin &amp; R. Renner, “Tight finite-key analysis for quantum cryptography,” Nat. Commun. 3, 634 (2012).</li>
+                    <li>H.-K. Lo, M. Curty &amp; B. Qi, “Measurement-device-independent quantum key distribution,” Phys. Rev. Lett. 108, 130503 (2012).</li>
+                    <li>A. Boaron et al., “Secure quantum key distribution over 421 km of optical fiber,” Phys. Rev. Lett. 121, 190502 (2018).</li>
+                    <li>M. Lucamarini, Z. L. Yuan, J. F. Dynes &amp; A. J. Shields, “Overcoming the rate–distance limit of quantum key distribution without quantum repeaters,” Nature 557, 400 (2018).</li>
+                </ol>
+            </article>
+
+            <article class="card prose lang-zh">
+                <h2>BB84 在做什麼</h2>
+                <p>Alice 和 Bob 想要一把只有兩人知道的祕密金鑰。Alice 把每個隨機位元編碼在一顆光子的偏振上，並隨機選擇直角基底 <b>+</b>（H = 0、V = 1）或對角基底 <b>×</b>（D = 0、A = 1）。Bob 用自己隨機選的基底量測每顆光子。之後兩人只在公開但經過認證的通道上公布<em>基底</em>，保留基底相同的位元。因為非正交的量子態無法被複製（不可複製定理），也無法在不擾動的情況下被量測，任何竊聽者都會留下錯誤。</p>
+
+                <h2>模擬器的六個步驟</h2>
+                <ol>
+                    <li><b>準備</b>：Alice 為每個脈衝選基底和位元。真實的衰減雷射發出的光子數服從 Poisson 分佈（常常是 0 顆，有時 2 顆以上）。</li>
+                    <li><b>傳送與量測</b>：光子穿過光纖（損耗 10<sup>−αL/10</sup>），偏振可能漂移或去極化，Eve 可能介入；Bob 的偵測器依照 Born rule、偵測效率和暗計數決定是否響、響哪一個。</li>
+                    <li><b>篩選</b>：公布基底，丟掉沒有偵測到或基底不同的脈衝（約 50%）。</li>
+                    <li><b>估計</b>：公開一部分隨機抽出的位元，量測量子位元錯誤率（QBER）。超過約 11% 就不可能有安全金鑰，本輪中止。</li>
+                    <li><b>糾錯</b>：Cascade 協定用二分搜尋的同位檢查找出並修正剩下的錯誤。每個公開的同位位元都算是洩漏給 Eve 的資訊。</li>
+                    <li><b>隱私放大</b>：用隨機 Toeplitz 矩陣（2-universal 雜湊）把修正後的金鑰壓縮成 ℓ 位元，消除 Eve 掌握的部分資訊。</li>
+                </ol>
+
+                <h2>物理如何被模擬</h2>
+                <ul>
+                    <li><b>狀態向量。</b>每顆光子是 qubit cos φ|H⟩ + sin φ|V⟩。量測結果依照 Born rule P(0) = cos²(φ − β)，量完後態會塌縮。BB84 的四個態、偏振漂移和 Pauli 錯誤都落在 Bloch 球的同一個大圓上，所以追蹤角度 φ 就是精確的狀態向量模擬。</li>
+                    <li><b>光源。</b>單光子源，或光子數服從 Poisson 分佈（平均 μ）的弱相干光脈衝。實驗室分頁另外加入誘騙態強度。</li>
+                    <li><b>通道。</b>每顆光子獨立決定能否穿過光纖；固定的偏振旋轉 θ 造成 sin²θ 的錯誤率；去極化會隨機施加 Pauli X、Y 或 Z。</li>
+                    <li><b>偵測器。</b>兩個臨界偵測器，有偵測效率 η 和每閘暗計數機率。兩個同時響（雙響）時隨機指定一個位元（squashing 模型）。</li>
+                    <li><b>Eve。</b><em>攔截重送</em>：用隨機基底量測再重送她看到的結果（受攻擊脈衝的 QBER 為 25%）。<em>PNS</em>：從每個多光子脈衝留下一顆光子，擋下單光子脈衝，並用無損線路讓 Bob 的計數率看起來正常，不會造成錯誤。<em>已知 Bob 的基底圖樣</em>：說明 Bob 的基底為什麼必須真正隨機；只要可以預測，Eve 用 Bob 的基底量測就完全隱形。</li>
+                    <li><b>雜湊後 Eve 的資訊量</b>是在 GF(2) 上精確計算的：最終金鑰雜湊矩陣相對於「Eve 確切知道的位元＋Cascade 公開的所有同位」的秩。</li>
+                </ul>
+
+                <h2>使用的安全性公式</h2>
+                <ul>
+                    <li>漸近金鑰長度 ℓ = n[1 − h(Q)] − leak<sub>EC</sub>（Shor–Preskill），門檻 Q ≈ 11.0%。</li>
+                    <li>有限金鑰長度 ℓ = n[1 − h(Q + μ)] − leak<sub>EC</sub> − log₂(2/ε<sub>sec</sub>²ε<sub>cor</sub>)，依 Tomamichel 等人 2012，ε<sub>sec</sub> = 10⁻¹⁰、ε<sub>cor</sub> = 10⁻¹²。</li>
+                    <li>誘騙態界限（真空＋弱誘騙態）採用 Ma、Qi、Zhao、Lo 2005；無誘騙態時採用 GLLP。</li>
+                </ul>
+
+                <h2>誠實說明的簡化</h2>
+                <ul>
+                    <li>假設古典通道已經過認證，沒有扣除認證的成本。</li>
+                    <li>相位錯誤用整體抽樣的 QBER 估計（對稱 BB84）。</li>
+                    <li>模擬器分頁選雷射光源時，仍然套用單光子公式，而 Shor–Preskill 的證明不涵蓋這種情況；這正是 PNS 攻擊在那裡能成功的原因。實驗室分頁展示了誘騙態的解法。</li>
+                    <li>偵測器旁通道攻擊（致盲、時間位移）不在模擬範圍內，那是量測裝置無關 QKD（MDI-QKD）要解決的問題。</li>
+                    <li>相干攻擊由安全性界限涵蓋，沒有逐顆光子模擬。</li>
+                </ul>
+
+                <h2>參考文獻</h2>
+                <p>參考文獻與英文版相同，請切換到 English 查看完整書目。</p>
+            </article>
+        </section>
+    </main>
+
+    <script src="js/rng.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/quantum.js"></script>
+    <script src="js/theory.js"></script>
+    <script src="js/postprocess.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/sim-ui.js"></script>
+    <script src="js/lab.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
